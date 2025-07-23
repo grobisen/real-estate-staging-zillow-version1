@@ -45,8 +45,8 @@ const ZillowUpload = () => {
       // Save API key to localStorage
       localStorage.setItem('zenrows_api_key', apiKey);
       
-      // Call ZenRows API to extract property data
-      const response = await fetch(`https://realestate.api.zenrows.com/v1/targets/zillow/properties/${zpid}?apikey=${apiKey}`);
+      // Call ZenRows API to extract property data with anti-bot protection
+      const response = await fetch(`https://realestate.api.zenrows.com/v1/targets/zillow/properties/${zpid}?apikey=${apiKey}&premium_proxy=true&proxy_country=US&js_render=true`);
       
       if (!response.ok) {
         throw new Error(`API request failed: ${response.status}`);
