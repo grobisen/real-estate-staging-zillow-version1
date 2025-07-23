@@ -7,7 +7,7 @@ import { Upload, Link2, Image, Key, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const ZillowUpload = () => {
-  const [zillowUrl, setZillowUrl] = useState("");
+  const [zillowUrl, setZillowUrl] = useState("https://www.zillow.com/homedetails/20033-Heritage-Point-Dr-Tampa-FL-33647/82045711_zpid/");
   const [apiKey, setApiKey] = useState(localStorage.getItem('zenrows_api_key') || "");
   const [isLoading, setIsLoading] = useState(false);
   const [extractedImages, setExtractedImages] = useState<string[]>([]);
