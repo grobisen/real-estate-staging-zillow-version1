@@ -29,7 +29,7 @@ const MediaLibrary = () => {
     {
       id: "1",
       name: "Modern Gray Sofa",
-      imageUrl: "/placeholder-sofa.jpg",
+      imageUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=300&h=300&fit=crop",
       tags: ["sofa", "gray", "modern"],
       category: "Living Room",
       dateAdded: "2024-01-15",
@@ -37,7 +37,7 @@ const MediaLibrary = () => {
     {
       id: "2", 
       name: "Oak Dining Table",
-      imageUrl: "/placeholder-table.jpg",
+      imageUrl: "https://images.unsplash.com/photo-1549497538-303791108f95?w=300&h=300&fit=crop",
       tags: ["table", "wood", "dining"],
       category: "Dining Room",
       dateAdded: "2024-01-10",
@@ -185,7 +185,20 @@ const MediaLibrary = () => {
             <Card key={item.id} className="furniture-item group">
               <CardContent className="p-4">
                 <div className="aspect-square bg-muted rounded-lg mb-3 relative overflow-hidden">
-                  <Image className="w-12 h-12 text-muted-foreground absolute inset-0 m-auto" />
+                  <img 
+                    src={item.imageUrl} 
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const fallback = target.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
+                  />
+                  <div className="absolute inset-0 items-center justify-center hidden">
+                    <Image className="w-12 h-12 text-muted-foreground" />
+                  </div>
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button
                       variant="destructive"

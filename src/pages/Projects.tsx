@@ -37,9 +37,9 @@ const Projects = () => {
     {
       id: "1",
       name: "Modern Living Room",
-      thumbnail: "/placeholder-living.jpg",
-      originalImage: "/placeholder-original.jpg", 
-      stagedImage: "/placeholder-staged.jpg",
+      thumbnail: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=225&fit=crop",
+      originalImage: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=600&fit=crop", 
+      stagedImage: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=600&fit=crop",
       dateCreated: "2024-01-15",
       dateModified: "2024-01-16",
       status: "completed",
@@ -48,9 +48,9 @@ const Projects = () => {
     {
       id: "2",
       name: "Cozy Bedroom Design",
-      thumbnail: "/placeholder-bedroom.jpg",
-      originalImage: "/placeholder-original2.jpg",
-      stagedImage: "/placeholder-staged2.jpg", 
+      thumbnail: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=225&fit=crop",
+      originalImage: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop",
+      stagedImage: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop", 
       dateCreated: "2024-01-10",
       dateModified: "2024-01-12",
       status: "draft",
@@ -138,7 +138,18 @@ const Projects = () => {
               <CardContent className="p-0">
                 {/* Project Thumbnail */}
                 <div className="aspect-video bg-muted rounded-t-lg relative overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  <img 
+                    src={project.thumbnail} 
+                    alt={project.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const fallback = target.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
+                  />
+                  <div className="absolute inset-0 items-center justify-center hidden">
                     <FolderOpen className="w-12 h-12 text-muted-foreground" />
                   </div>
                   <div className="absolute top-2 left-2">
