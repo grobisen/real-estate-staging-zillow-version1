@@ -3,12 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Upload, Link2, Image } from "lucide-react";
+import { Upload, Link2, Image, Key, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const ZillowUpload = () => {
   const [zillowUrl, setZillowUrl] = useState("");
+  const [apiKey, setApiKey] = useState(localStorage.getItem('zenrows_api_key') || "");
   const [isLoading, setIsLoading] = useState(false);
   const [extractedImages, setExtractedImages] = useState<string[]>([]);
+
+  const extractZpidFromUrl = (url: string): string | null => {
+    const zpidMatch = url.match(/\/(\d+)_zpid/);
+    return zpidMatch ? zpidMatch[1] : null;
+  };
 
   const handleUrlSubmit = async () => {
     if (!zillowUrl.trim()) {
@@ -21,23 +28,60 @@ const ZillowUpload = () => {
       return;
     }
 
+    if (!apiKey.trim()) {
+      toast.error("Please enter your ZenRows API key");
+      return;
+    }
+
+    const zpid = extractZpidFromUrl(zillowUrl);
+    if (!zpid) {
+      toast.error("Could not extract property ID from URL. Make sure it's a valid Zillow listing URL.");
+      return;
+    }
+
     setIsLoading(true);
     
     try {
-      // Simulate image extraction - in real implementation, you'd use a web scraping service
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Save API key to localStorage
+      localStorage.setItem('zenrows_api_key', apiKey);
       
-      // Mock extracted images
-      const mockImages = [
-        "https://photos.zillowstatic.com/fp/example1.jpg",
-        "https://photos.zillowstatic.com/fp/example2.jpg",
-        "https://photos.zillowstatic.com/fp/example3.jpg",
-      ];
+      // Call ZenRows API to extract property data
+      const response = await fetch(`https://realestate.api.zenrows.com/v1/targets/zillow/properties/${zpid}?apikey=${apiKey}`);
       
-      setExtractedImages(mockImages);
-      toast.success(`Successfully extracted ${mockImages.length} images from the listing`);
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Extract images from the response
+      const images: string[] = [];
+      
+      // Add main property image
+      if (data.property_image) {
+        images.push(data.property_image);
+      }
+      
+      // Add gallery images if available
+      if (data.gallery && Array.isArray(data.gallery)) {
+        images.push(...data.gallery.map((img: any) => img.url || img).filter(Boolean));
+      }
+      
+      // Add photos array if available
+      if (data.photos && Array.isArray(data.photos)) {
+        images.push(...data.photos.map((photo: any) => photo.url || photo).filter(Boolean));
+      }
+      
+      if (images.length === 0) {
+        toast.error("No images found in this listing");
+        return;
+      }
+      
+      setExtractedImages(images);
+      toast.success(`Successfully extracted ${images.length} images from the listing`);
     } catch (error) {
-      toast.error("Failed to extract images from Zillow listing");
+      console.error('Error extracting images:', error);
+      toast.error("Failed to extract images. Please check your API key and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -61,6 +105,44 @@ const ZillowUpload = () => {
           </p>
         </div>
 
+        <Alert className="mb-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            This feature requires a ZenRows API key to extract real Zillow images. 
+            For production use, we recommend connecting to Supabase for secure API key management.
+            Your API key will be stored locally in your browser.
+          </AlertDescription>
+        </Alert>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Key className="w-5 h-5" />
+              ZenRows API Key
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Input
+              type="password"
+              placeholder="Enter your ZenRows API key"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
+            <p className="text-sm text-muted-foreground">
+              Get your API key from{" "}
+              <a 
+                href="https://www.zenrows.com/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                ZenRows.com
+              </a>
+              . Your key is stored locally and never shared.
+            </p>
+          </CardContent>
+        </Card>
+
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -72,14 +154,14 @@ const ZillowUpload = () => {
             <div className="flex gap-2">
               <Input
                 type="url"
-                placeholder="https://www.zillow.com/homedetails/..."
+                placeholder="https://www.zillow.com/homedetails/123-main-st_82045711_zpid/"
                 value={zillowUrl}
                 onChange={(e) => setZillowUrl(e.target.value)}
                 className="flex-1"
               />
               <Button 
                 onClick={handleUrlSubmit}
-                disabled={isLoading}
+                disabled={isLoading || !apiKey.trim()}
                 className="min-w-[120px]"
               >
                 {isLoading ? (
@@ -93,7 +175,7 @@ const ZillowUpload = () => {
               </Button>
             </div>
             <p className="text-sm text-muted-foreground">
-              Paste any Zillow listing URL to automatically extract all property images
+              Paste any Zillow listing URL with a ZPID (property ID) to extract all property images
             </p>
           </CardContent>
         </Card>
@@ -114,8 +196,21 @@ const ZillowUpload = () => {
                     className="relative group cursor-pointer rounded-lg overflow-hidden border border-border hover:border-primary transition-colors"
                     onClick={() => handleImageSelect(imageUrl)}
                   >
-                    <div className="aspect-video bg-muted flex items-center justify-center">
-                      <Image className="w-12 h-12 text-muted-foreground" />
+                    <div className="aspect-video bg-muted relative overflow-hidden">
+                      <img 
+                        src={imageUrl} 
+                        alt={`Property image ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const fallback = target.nextElementSibling as HTMLElement;
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                      <div className="absolute inset-0 items-center justify-center hidden">
+                        <Image className="w-12 h-12 text-muted-foreground" />
+                      </div>
                     </div>
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Button variant="secondary" size="sm">
